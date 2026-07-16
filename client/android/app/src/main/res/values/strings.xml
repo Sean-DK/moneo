@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Moneo</string>
+    <string name="title_activity_main">Moneo</string>
+    <string name="package_name">net.stablesea.moneo</string>
+    <string name="custom_url_scheme">net.stablesea.moneo</string>
+</resources>
