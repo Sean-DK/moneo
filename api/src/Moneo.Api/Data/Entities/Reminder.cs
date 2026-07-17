@@ -37,8 +37,10 @@
 
     public enum CompletionSource
     {
-        InApp              = 0,
+        InApp = 0,
         NotificationAction = 1,
-        LinkedTodo         = 2
+        LinkedTodo = 2,
+        LinkedTodoDeleted = 3,
+        UserCancelledReminder = 4
     }
 }

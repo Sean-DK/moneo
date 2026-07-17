@@ -1,4 +1,6 @@
 import { useCategories } from './queries';
+import { Chip } from '../../components/Chip';
+import { DEFAULT_CATEGORY_COLOR } from '../../lib/design/color';
 
 export function useEffectiveCategory(selected: string | null): {
   categories: ReturnType<typeof useCategories>;
@@ -15,28 +17,33 @@ export function useEffectiveCategory(selected: string | null): {
 export function CategoryChips({
   selectedId,
   onSelect,
+  variant = 'row',
 }: {
   selectedId: string | null;
   onSelect: (id: string) => void;
+  variant?: 'grid' | 'row';
 }) {
   const { categories, effectiveId } = useEffectiveCategory(selectedId);
   if (!categories) return null;
 
   return (
-    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-      {categories.map((c) => (
-        <button
-          key={c.id}
-          onClick={() => onSelect(c.id)}
-          style={{
-            padding: '6px 12px', borderRadius: 16, cursor: 'pointer',
-            border: effectiveId === c.id ? '2px solid #3B82F6' : '1px solid #ccc',
-            background: effectiveId === c.id ? '#EFF6FF' : 'white',
-          }}
-        >
-          {c.name}
-        </button>
-      ))}
+    <div className={variant === 'grid' ? 'grid grid-cols-3 gap-2' : 'flex gap-1.75 overflow-x-auto'}>
+      {categories.map((c) => {
+        const selected = effectiveId === c.id;
+        return (
+          <Chip
+            key={c.id}
+            selected={selected}
+            onClick={() => onSelect(c.id)}
+            color={c.color ?? DEFAULT_CATEGORY_COLOR}
+            variant={variant === 'row' ? 'accent' : 'tint'}
+            size={variant}
+            dot
+          >
+            {c.name}
+          </Chip>
+        );
+      })}
     </div>
   );
 }

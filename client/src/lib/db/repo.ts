@@ -77,3 +77,15 @@ export async function remove(table: SyncTable, id: string): Promise<void> {
     await enqueue(table, id);
   });
 }
+
+/** Un-delete a soft-deleted row (the inverse of remove). Bumps modifiedAt + enqueues. */
+export async function restore(table: SyncTable, id: string): Promise<void> {
+  await db.transaction('rw', db[table], db.outbox, async () => {
+    const count = await (db[table] as Dexie.Table).update(id, {
+      isDeleted: false,
+      modifiedAt: nowIso(),
+    });
+    if (count === 0) throw new Error(`restore: no row ${id} in ${table}`);
+    await enqueue(table, id);
+  });
+}

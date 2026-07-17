@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { Play, Square } from 'lucide-react';
 import { useRunningEntry, useRecentEntries, useTick } from './queries';
 import { startTimer, stopTimer, MAX_NAME_LENGTH } from './actions';
 import { useCategories } from '../categories/queries';
 import { useComposerDefaults } from '../reminders/composerStore';
-import type { TimeEntry } from '../../lib/db/types';
+import type { Category, TimeEntry } from '../../lib/db/types';
 import { CategoryChips, useEffectiveCategory } from '../categories/CategoryChips';
+import { SectionLabel } from '../../components/SectionLabel';
+import { DEFAULT_CATEGORY_COLOR } from '../../lib/design/color';
 
 function formatDuration(ms: number): string {
   const s = Math.floor(ms / 1000);
@@ -23,36 +26,48 @@ export function TrackingScreen() {
   const recent = useRecentEntries();
   const categories = useCategories();
 
-  if (running === undefined || !recent || !categories) return <p>Loading…</p>;
+  if (running === undefined || !recent || !categories) return <p className="text-muted">Loading…</p>;
 
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', padding: 16 }}>
-      <h2>Time Tracking</h2>
-      {running ? <RunningCard entry={running} /> : <StartCard />}
+    <div className="flex flex-col gap-4.5">
+      <h1 className="text-[22px] font-semibold tracking-[-0.01em] text-ink">Time Tracking</h1>
 
-      <h3 style={{ marginTop: 24, fontSize: 16, color: '#666' }}>Recent</h3>
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {recent.map((e) => <EntryRow key={e.id} entry={e} />)}
-      </ul>
-      {recent.length === 0 && <p style={{ color: '#666' }}>No entries yet.</p>}
+      {running ? <RunningCard entry={running} categories={categories} /> : <StartCard />}
+
+      <div className="border-t border-white/8 pt-1.5">
+        <SectionLabel>recent</SectionLabel>
+        <ul className="flex flex-col">
+          {recent.map((e) => <EntryRow key={e.id} entry={e} categories={categories} />)}
+        </ul>
+        {recent.length === 0 && <p className="text-[14px] text-muted">No entries yet.</p>}
+      </div>
     </div>
   );
 }
 
-function RunningCard({ entry }: { entry: TimeEntry }) {
+function RunningCard({ entry, categories }: { entry: TimeEntry; categories: Category[] }) {
   const tick = useTick(true);
   const elapsed = tick - new Date(entry.startedAt).getTime();
+  const category = categories.find((c) => c.id === entry.categoryId);
 
   return (
-    <div style={{ padding: 16, borderRadius: 12, background: '#EFF6FF', textAlign: 'center' }}>
-      <div style={{ fontSize: 14, color: '#666' }}>Tracking</div>
-      <div style={{ fontSize: 22, fontWeight: 600, margin: '4px 0' }}>{entry.name}</div>
-      <div style={{ fontSize: 40, fontVariantNumeric: 'tabular-nums', margin: '8px 0' }}>
+    <div className="rounded-20 border border-accent/30 bg-timercard px-5.5 pb-6 pt-6.5 text-center shadow-[0_10px_34px_rgba(63,208,196,0.12)]">
+      <div className="mb-3.5 inline-flex items-center gap-1.75">
+        <span className="h-1.75 w-1.75 rounded-full bg-accent shadow-[0_0_0_4px_rgba(63,208,196,0.2)]" />
+        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">
+          tracking · {category?.name ?? 'Uncategorized'}
+        </span>
+      </div>
+      <div className="mb-1 text-[20px] font-semibold text-ink">{entry.name}</div>
+      <div className="font-mono text-[52px] leading-[1.05] font-medium tracking-[-0.02em] text-ink tabular-nums">
         {formatDuration(elapsed)}
       </div>
-      <button onClick={() => void stopTimer()}
-        style={{ padding: '10px 24px', fontSize: 16, borderRadius: 8, border: 'none',
-          background: '#EF4444', color: 'white', cursor: 'pointer' }}>
+      <div className="mt-1.5 font-mono text-[12px] text-muted">started {timeFmt.format(new Date(entry.startedAt))}</div>
+      <button
+        onClick={() => void stopTimer()}
+        className="mt-5.5 flex w-full items-center justify-center gap-2 rounded-15 border border-danger bg-danger/14 py-3.75 text-[16px] font-bold text-[#F0A49C]"
+      >
+        <Square size={17} />
         Stop
       </button>
     </div>
@@ -79,35 +94,49 @@ function StartCard() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <input
-        autoFocus
-        value={name}
-        maxLength={MAX_NAME_LENGTH}
-        placeholder="What are you doing?"
-        onChange={(e) => setName(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && void start()}
-        style={{ fontSize: 18, padding: 10 }}
-      />
-      <CategoryChips selectedId={categoryId} onSelect={setCategoryId} />
-      <button onClick={() => void start()} disabled={!name.trim()}
-        style={{ padding: '12px', fontSize: 16, borderRadius: 8, border: 'none',
-          background: '#10B981', color: 'white', cursor: 'pointer' }}>
-        Start timer
+    <div className="flex flex-col gap-3">
+      <div>
+        <SectionLabel commented>what are you doing?</SectionLabel>
+        <div className="rounded-15 border border-white/10 bg-surface px-4 py-3.75">
+          <input
+            autoFocus
+            value={name}
+            maxLength={MAX_NAME_LENGTH}
+            placeholder="What are you doing?"
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && void start()}
+            style={{ caretColor: '#3FD0C4' }}
+            className="w-full bg-transparent text-[19px] font-semibold text-ink outline-none placeholder:text-muted"
+          />
+        </div>
+      </div>
+
+      <CategoryChips selectedId={categoryId} onSelect={setCategoryId} variant="grid" />
+
+      <button
+        onClick={() => void start()}
+        disabled={!name.trim()}
+        className="flex items-center justify-center gap-2.25 rounded-16 bg-accent py-4.25 text-[17px] font-bold text-ink-on-accent shadow-[0_8px_26px_rgba(63,208,196,0.28)] disabled:opacity-40"
+      >
+        <Play size={19} strokeWidth={2.6} />
+        Start tracking
       </button>
-      {error && <p style={{ color: 'crimson' }}>{error}</p>}
+      {error && <p className="text-[13px] text-danger">{error}</p>}
     </div>
   );
 }
 
-function EntryRow({ entry }: { entry: TimeEntry }) {
+function EntryRow({ entry, categories }: { entry: TimeEntry; categories: Category[] }) {
   const dur = new Date(entry.endedAt!).getTime() - new Date(entry.startedAt).getTime();
+  const category = categories.find((c) => c.id === entry.categoryId);
   return (
-    <li style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #eee' }}>
-      <span style={{ flexGrow: 1 }}>{entry.name}</span>
-      <small style={{ color: '#666' }}>
-        {timeFmt.format(new Date(entry.startedAt))} · {formatDuration(dur)}
-      </small>
+    <li className="flex items-center gap-2.75 border-b border-white/6 py-2.75">
+      <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: category?.color ?? DEFAULT_CATEGORY_COLOR }} />
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[14px] font-medium text-ink">{entry.name}</div>
+        <div className="font-mono text-[11px] text-muted">{timeFmt.format(new Date(entry.startedAt))}</div>
+      </div>
+      <span className="shrink-0 font-mono text-[14px] font-medium text-ink-muted">{formatDuration(dur)}</span>
     </li>
   );
 }

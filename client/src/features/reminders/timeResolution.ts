@@ -12,15 +12,15 @@ export const SLOT_LABELS: Record<Slot, string> = {
   beforeBed: 'Before bed',
 };
 
-export const DAY_CHIPS = ['today', 'tomorrow', 'weekend', 'nextWeek', 'later', 'custom'] as const;
+export const DAY_CHIPS = ['later', 'today', 'tomorrow', 'weekend', 'nextWeek', 'custom'] as const;
 export type DayChip = (typeof DAY_CHIPS)[number];
 
 export const DAY_LABELS: Record<DayChip, string> = {
+  later: 'Later',
   today: 'Today',
   tomorrow: 'Tomorrow',
   weekend: 'This Weekend',
   nextWeek: 'Next Week',
-  later: 'Later',
   custom: 'Custom',
 };
 
@@ -92,11 +92,13 @@ export function availableSlots(day: Date, settings: UserSettings, now: Date): Sl
 }
 
 /** Day chips currently selectable (today greys out when all its slots are past). */
-export function availableDayChips(settings: UserSettings, now: Date): DayChip[] {
-  return DAY_CHIPS.filter((chip) => {
-    if (chip === 'later' || chip === 'custom') return true;
-    return availableSlots(resolveDay(chip, now), settings, now).length > 0;
-  });
+export function dayChipAvailability(settings: UserSettings, now: Date): Record<DayChip, boolean> {
+  return Object.fromEntries(
+    DAY_CHIPS.map((chip) => {
+      if (chip === 'later' || chip === 'custom') return [chip, true];
+      return [chip, availableSlots(resolveDay(chip, now), settings, now).length > 0];
+    }),
+  ) as Record<DayChip, boolean>;
 }
 
 export interface SmartSuggestion {
@@ -112,19 +114,42 @@ export function smartSuggestions(settings: UserSettings, now: Date): SmartSugges
   ];
 
   const todaySlots = availableSlots(resolveDay('today', now), settings, now);
+  const tomorrow = resolveDay('tomorrow', now);
+
   if (todaySlots.length > 0) {
+    // Next upcoming slot today
     const slot = todaySlots[0];
+    const label = SLOT_LABELS[slot].toLowerCase() === 'morning' ? 'This morning'
+      : SLOT_LABELS[slot].toLowerCase() === 'midday' ? 'Midday today'
+      : SLOT_LABELS[slot].toLowerCase() === 'afternoon' ? 'This afternoon'
+      : SLOT_LABELS[slot].toLowerCase() === 'evening' ? 'This evening'
+      : SLOT_LABELS[slot].toLowerCase() === 'before bed' ? 'Tonight'
+      : 'unknown'
     suggestions.push({
-      label: `This ${SLOT_LABELS[slot].toLowerCase()}`,
+      label: label,
       presetUsed: `smart.today.${slot}`,
       at: resolveSlotOnDay(resolveDay('today', now), settings, slot),
     });
-  } else {
-    const slot = SLOTS[0]; // tomorrow's first slot
+
+    // Tomorrow's first slot — always distinct from a "today" suggestion
+    const tSlot = SLOTS[1];
     suggestions.push({
-      label: `Tomorrow, ${SLOT_LABELS[slot].toLowerCase()}`,
-      presetUsed: `smart.tomorrow.${slot}`,
-      at: resolveSlotOnDay(resolveDay('tomorrow', now), settings, slot),
+      label: `Tomorrow`,
+      presetUsed: `smart.tomorrow.${tSlot}`,
+      at: resolveSlotOnDay(tomorrow, settings, tSlot),
+    });
+  } else {
+    // No today-slots left (late evening): offer the first TWO tomorrow slots
+    const [first, second] = [SLOTS[1], SLOTS[2]];
+    suggestions.push({
+      label: `Tomorrow`,
+      presetUsed: `smart.tomorrow.${first}`,
+      at: resolveSlotOnDay(tomorrow, settings, first),
+    });
+    suggestions.push({
+      label: `Tomorrow`,
+      presetUsed: `smart.tomorrow.${second}`,
+      at: resolveSlotOnDay(tomorrow, settings, second),
     });
   }
 

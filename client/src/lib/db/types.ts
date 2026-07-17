@@ -5,7 +5,13 @@ export type Priority = (typeof Priority)[keyof typeof Priority];
 export const ReminderStatus = { Pending: 0, Fired: 1, Completed: 2, Cancelled: 3 } as const;
 export type ReminderStatus = (typeof ReminderStatus)[keyof typeof ReminderStatus];
 
-export const CompletionSource = { InApp: 0, NotificationAction: 1, LinkedTodo: 2 } as const;
+export const CompletionSource = {
+  InApp: 0,
+  NotificationAction: 1,
+  LinkedTodo: 2,
+  LinkedTodoDeleted: 3,
+  UserCancelledReminder: 4,
+} as const;
 export type CompletionSource = (typeof CompletionSource)[keyof typeof CompletionSource];
 
 export const TimeEntrySource = { Timer: 0, Manual: 1 } as const;
@@ -38,7 +44,7 @@ export interface Category extends Syncable {
 export interface Todo extends Syncable {
   note: string;
   priority: Priority;
-  categoryId: string | null;
+  categoryId: string;
   isCompleted: boolean;
   completedAt: string | null;
   sourceReminderId: string | null;

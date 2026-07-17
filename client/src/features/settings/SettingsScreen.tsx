@@ -1,6 +1,11 @@
+import { ChevronRight } from 'lucide-react';
 import { useSettings } from './queries';
 import { setSlotTime, setStrictness } from './actions';
 import { TrackerStrictness } from '../../lib/db/types';
+import { SLOT_LABELS, type Slot } from '../reminders/timeResolution';
+import { SLOT_ICONS } from '../../lib/design/slotIcons';
+import { SectionLabel } from '../../components/SectionLabel';
+import { IconBox } from '../../components/IconBox';
 
 const STRICTNESS_OPTIONS: { value: TrackerStrictness; label: string; desc: string }[] = [
   { value: TrackerStrictness.LeaveMeAlone, label: 'Leave Me Alone', desc: 'No reminders to track, ever.' },
@@ -12,62 +17,72 @@ const STRICTNESS_OPTIONS: { value: TrackerStrictness; label: string; desc: strin
 
 const SLOTS: { field:
   'firstThingTime' | 'morningTime' | 'middayTime' | 'afternoonTime' | 'eveningTime' | 'beforeBedTime';
-  label: string }[] = [
-  { field: 'firstThingTime', label: 'First thing' },
-  { field: 'morningTime', label: 'Morning' },
-  { field: 'middayTime', label: 'Midday' },
-  { field: 'afternoonTime', label: 'Afternoon' },
-  { field: 'eveningTime', label: 'Evening' },
-  { field: 'beforeBedTime', label: 'Before bed' },
+  slot: Slot }[] = [
+  { field: 'firstThingTime', slot: 'firstThing' },
+  { field: 'morningTime', slot: 'morning' },
+  { field: 'middayTime', slot: 'midday' },
+  { field: 'afternoonTime', slot: 'afternoon' },
+  { field: 'eveningTime', slot: 'evening' },
+  { field: 'beforeBedTime', slot: 'beforeBed' },
 ];
 
 // minutes-from-midnight <-> "HH:MM" for <input type="time">
 const toTimeStr = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 const fromTimeStr = (s: string) => { const [h, m] = s.split(':').map(Number); return h * 60 + m; };
 
+const timeFmt = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+const formatMinutes = (m: number) => timeFmt.format(new Date(0, 0, 0, Math.floor(m / 60), m % 60));
+
 export function SettingsScreen() {
   const settings = useSettings();
-  if (!settings) return <p style={{ padding: 16 }}>Loading…</p>;
+  if (!settings) return <p className="text-muted">Loading…</p>;
 
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', padding: 16 }}>
-      <h2>Settings</h2>
+    <div className="flex flex-col gap-5.5">
+      <h1 className="text-[22px] font-semibold tracking-[-0.01em] text-ink">Settings</h1>
 
-      <section style={{ marginBottom: 28 }}>
-        <h3 style={{ fontSize: 15, color: '#666' }}>Time reminder times</h3>
-        <p style={{ fontSize: 13, color: '#999', marginTop: 0 }}>
-          Used for reminder presets. "Before bed" and "First thing" also set your quiet hours.
-        </p>
-        {SLOTS.map((s) => (
-          <div key={s.field} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0' }}>
-            <label htmlFor={s.field}>{s.label}</label>
-            <input
-              id={s.field}
-              type="time"
-              value={toTimeStr(settings[s.field])}
-              onChange={(e) => void setSlotTime(settings.id, s.field, fromTimeStr(e.target.value))}
-            />
-          </div>
-        ))}
+      <section>
+        <SectionLabel>Time of day</SectionLabel>
+        <div className="overflow-hidden rounded-15 border border-white/9 bg-surface">
+          {SLOTS.map((s, i) => (
+            <div key={s.field} className={`relative flex items-center gap-3 px-3.75 py-3.25 ${i < SLOTS.length - 1 ? 'border-b border-white/6' : ''}`}>
+              <IconBox icon={SLOT_ICONS[s.slot]} size={30} />
+              <span className="flex-1 text-[14px] font-medium text-ink">{SLOT_LABELS[s.slot]}</span>
+              <span className="font-mono text-[14px] text-ink-muted">{formatMinutes(settings[s.field])}</span>
+              <ChevronRight size={16} className="text-control" />
+              <input
+                id={s.field}
+                type="time"
+                value={toTimeStr(settings[s.field])}
+                onChange={(e) => void setSlotTime(settings.id, s.field, fromTimeStr(e.target.value))}
+                style={{ colorScheme: 'dark' }}
+                className="absolute inset-0 cursor-pointer opacity-0"
+              />
+            </div>
+          ))}
+        </div>
       </section>
 
       <section>
-        <h3 style={{ fontSize: 15, color: '#666' }}>Time-tracking reminders</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+        <SectionLabel>Nag strictness</SectionLabel>
+        <div className="flex flex-col gap-2">
           {STRICTNESS_OPTIONS.map((o) => {
             const active = settings.trackerStrictness === o.value;
             return (
               <button
                 key={o.value}
                 onClick={() => void setStrictness(settings.id, o.value)}
-                style={{
-                  textAlign: 'left', padding: 12, borderRadius: 8, cursor: 'pointer',
-                  border: active ? '2px solid #3B82F6' : '1px solid #ddd',
-                  background: active ? '#EFF6FF' : 'white',
-                }}
+                className={`flex items-start gap-3 rounded-13 border px-3.5 py-3.25 text-left ${
+                  active ? 'border-accent bg-accent/9' : 'border-white/8 bg-surface'
+                }`}
               >
-                <div style={{ fontWeight: 600 }}>{o.label}</div>
-                <div style={{ fontSize: 13, color: '#666' }}>{o.desc}</div>
+                <span
+                  className={`mt-0.5 h-5 w-5 shrink-0 rounded-full ${active ? 'border-[6px] border-accent' : 'border-2 border-control'}`}
+                />
+                <span>
+                  <div className={`text-[14px] ${active ? 'font-bold text-ink' : 'font-semibold text-ink'}`}>{o.label}</div>
+                  <div className={`text-[12px] ${active ? 'text-[#A9D9D3]' : 'text-[#8A8D88]'}`}>{o.desc}</div>
+                </span>
               </button>
             );
           })}
