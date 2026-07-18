@@ -1,13 +1,23 @@
 import { useState } from 'react';
-import { Play, Square } from 'lucide-react';
+import { Square } from 'lucide-react';
 import { useRunningEntry, useRecentEntries, useTick } from './queries';
-import { startTimer, stopTimer, MAX_NAME_LENGTH } from './actions';
+import { stopTimer, MAX_NAME_LENGTH, startTimerAt, planBackdatedStart } from './actions';
 import { useCategories } from '../categories/queries';
 import { useComposerDefaults } from '../reminders/composerStore';
 import type { Category, TimeEntry } from '../../lib/db/types';
 import { CategoryChips, useEffectiveCategory } from '../categories/CategoryChips';
 import { SectionLabel } from '../../components/SectionLabel';
 import { DEFAULT_CATEGORY_COLOR } from '../../lib/design/color';
+import { formatEntryDuration, type CascadePlan } from './backdateCascade';
+
+const BACKDATE_CHIPS: { label: string; minutesAgo: number }[] = [
+  { label: 'Now', minutesAgo: 0 },
+  { label: '5 min ago', minutesAgo: 5 },
+  { label: '10 min ago', minutesAgo: 10 },
+  { label: '15 min ago', minutesAgo: 15 },
+  { label: '30 min ago', minutesAgo: 30 },
+  { label: '1 hour ago', minutesAgo: 60 },
+];
 
 function formatDuration(ms: number): string {
   const s = Math.floor(ms / 1000);
@@ -78,50 +88,106 @@ function StartCard() {
   const defaults = useComposerDefaults();
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState<string | null>(defaults.categoryId);
+  const [pendingStart, setPendingStart] = useState(false); // chips shown?
+  const [confirm, setConfirm] = useState<{ startedAt: Date; plan: CascadePlan } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { effectiveId } = useEffectiveCategory(categoryId);
 
-  const start = async () => {
+  const pickBackdate = async (minutesAgo: number) => {
     if (!effectiveId) return;
+    const startedAt = new Date(Date.now() - minutesAgo * 60_000);
+    const plan = await planBackdatedStart(startedAt);
+    if (plan.destructive) {
+      setConfirm({ startedAt, plan });      // show are-you-sure
+    } else {
+      await commit(startedAt, plan);
+    }
+  };
+
+  const commit = async (startedAt: Date, plan: CascadePlan) => {
     try {
-      await startTimer({ name, categoryId: effectiveId });
-      defaults.remember({ priority: defaults.priority, categoryId: effectiveId });
-      setName('');
-      setError(null);
+      await startTimerAt({ name, categoryId: effectiveId! }, startedAt, plan);
+      defaults.remember({ priority: defaults.priority, categoryId: effectiveId! });
+      setName(''); setPendingStart(false); setConfirm(null); setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
   };
 
-  return (
-    <div className="flex flex-col gap-3">
-      <div>
-        <SectionLabel commented>what are you doing?</SectionLabel>
-        <div className="rounded-15 border border-white/10 bg-surface px-4 py-3.75">
-          <input
-            autoFocus
-            value={name}
-            maxLength={MAX_NAME_LENGTH}
-            placeholder="What are you doing?"
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && void start()}
-            style={{ caretColor: '#3FD0C4' }}
-            className="w-full bg-transparent text-[19px] font-semibold text-ink outline-none placeholder:text-muted"
-          />
+  if (pendingStart) {
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-[15px] font-semibold text-ink">When did you start "{name}"?</p>
+        <div className="grid grid-cols-2 gap-2">
+          {BACKDATE_CHIPS.map((c) => (
+            <button
+              key={c.minutesAgo}
+              onClick={() => void pickBackdate(c.minutesAgo)}
+              className="rounded-14 border border-accent/40 bg-accent/10 px-3 py-3 text-[14px] font-semibold text-accent"
+            >
+              {c.label}
+            </button>
+          ))}
         </div>
+        <button onClick={() => setPendingStart(false)} className="text-[13px] text-muted">Cancel</button>
+
+        {confirm && (
+          <ConfirmDialog
+            plan={confirm.plan}
+            onConfirm={() => void commit(confirm.startedAt, confirm.plan)}
+            onCancel={() => setConfirm(null)}
+          />
+        )}
+        {error && <p className="text-[13px] text-danger">{error}</p>}
       </div>
+    );
+  }
 
+  return (
+    <div className="flex flex-col gap-2">
+      <input
+        autoFocus value={name} maxLength={MAX_NAME_LENGTH}
+        placeholder="What are you doing?"
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && name.trim() && setPendingStart(true)}
+        className="rounded-14 border border-white/10 bg-surface px-3 py-2.5 text-[18px] text-ink outline-none"
+      />
       <CategoryChips selectedId={categoryId} onSelect={setCategoryId} variant="grid" />
-
       <button
-        onClick={() => void start()}
+        onClick={() => name.trim() && setPendingStart(true)}
         disabled={!name.trim()}
-        className="flex items-center justify-center gap-2.25 rounded-16 bg-accent py-4.25 text-[17px] font-bold text-ink-on-accent shadow-[0_8px_26px_rgba(63,208,196,0.28)] disabled:opacity-40"
+        className="rounded-14 bg-success py-3 font-bold text-ink-on-accent disabled:opacity-40"
       >
-        <Play size={19} strokeWidth={2.6} />
-        Start tracking
+        Start timer
       </button>
       {error && <p className="text-[13px] text-danger">{error}</p>}
+    </div>
+  );
+}
+
+function ConfirmDialog({ plan, onConfirm, onCancel }: {
+  plan: CascadePlan; onConfirm: () => void; onCancel: () => void;
+}) {
+  const now = new Date();
+  const list = plan.toDelete
+    .map((e) => `${e.name} - ${formatEntryDuration(e, now)}`)
+    .join(', ');
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
+      <div className="w-full max-w-sm rounded-2xl bg-base p-5">
+        <p className="text-[15px] font-semibold text-ink">
+          This will delete {plan.toDelete.length} {plan.toDelete.length === 1 ? 'entry' : 'entries'}:
+        </p>
+        <p className="mt-1.5 text-[14px] text-muted">{list}</p>
+        <div className="mt-4 flex gap-2">
+          <button onClick={onCancel} className="flex-1 rounded-14 border border-white/15 py-2.5 font-semibold text-ink">
+            Cancel
+          </button>
+          <button onClick={onConfirm} className="flex-1 rounded-14 border border-danger/40 bg-danger/10 py-2.5 font-bold text-danger">
+            Delete & Start
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

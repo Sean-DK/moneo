@@ -14,10 +14,13 @@ namespace Moneo.Api.Features.Sync
             TodoDto[]? Todos,
             ReminderDto[]? Reminders,
             TimeEntryDto[]? TimeEntries,
-            UserSettingsDto[]? Settings)
+            UserSettingsDto[]? Settings,
+            MoodEntryDto[]? MoodEntries)
         {
             public int TotalCount =>
-                (Categories?.Length ?? 0) + (Todos?.Length ?? 0) + (Reminders?.Length ?? 0) + (TimeEntries?.Length ?? 0) + (Settings?.Length ?? 0);
+                (Categories?.Length ?? 0) + (Todos?.Length ?? 0) + 
+                (Reminders?.Length ?? 0) + (TimeEntries?.Length ?? 0) + 
+                (Settings?.Length ?? 0) + (MoodEntries?.Length ?? 0);
         }
 
         public record ItemResult(string Status, string? Reason = null)
@@ -117,6 +120,20 @@ namespace Moneo.Api.Features.Sync
                     e.EveningTime = dto.EveningTime;
                     e.BeforeBedTime = dto.BeforeBedTime;
                     e.TrackerStrictness = dto.TrackerStrictness;
+                },
+                results, ct);
+
+            await ApplyAsync(db, user, request.MoodEntries, MoodRules,
+                static dto => new MoodEntry(),
+                static (dto, e) =>
+                {
+                    e.MoodDate = dto.MoodDate;
+                    e.DayRating = dto.DayRating; e.Productivity = dto.Productivity;
+                    e.Weather = dto.Weather; e.Activities = dto.Activities; e.ActivitiesChaotic = dto.ActivitiesChaotic;
+                    e.Location = dto.Location; e.FreeTime = dto.FreeTime; e.Social = dto.Social;
+                    e.Sleep = dto.Sleep; e.AteWell = dto.AteWell; e.Exercise = dto.Exercise; e.Sickness = dto.Sickness;
+                    e.StressEvent = dto.StressEvent; e.GoodEvent = dto.GoodEvent; e.Outlook = dto.Outlook;
+                    e.Laughed = dto.Laughed; e.RepeatDay = dto.RepeatDay; e.RepeatDayAutoSkipped = dto.RepeatDayAutoSkipped;
                 },
                 results, ct);
 
@@ -242,6 +259,11 @@ namespace Moneo.Api.Features.Sync
             v => v.RuleFor(x => x.AfternoonTime).InclusiveBetween(0, 1439),
             v => v.RuleFor(x => x.EveningTime).InclusiveBetween(0, 1439),
             v => v.RuleFor(x => x.BeforeBedTime).InclusiveBetween(0, 1439),
+        };
+
+        private static readonly IValidator<MoodEntryDto> MoodRules = new InlineValidator<MoodEntryDto>
+        {
+            v => v.RuleFor(x => x.MoodDate).NotEqual(default(DateOnly)),
         };
     }
 }

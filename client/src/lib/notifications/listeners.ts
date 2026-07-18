@@ -17,6 +17,12 @@ export function startNotificationListeners(): void {
   });
 
   void LocalNotifications.addListener('localNotificationActionPerformed', (event) => {
+      const moodExtra = event.notification.extra as { moodCheckIn?: boolean } | undefined;
+      if (moodExtra?.moodCheckIn) {
+        useNav.getState().go('mood');
+        return;
+      }
+
     const id = (event.notification.extra as { reminderId?: string })?.reminderId;
     if (!id) return;
 

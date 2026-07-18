@@ -1,4 +1,4 @@
-import type { Category, Todo, Reminder, TimeEntry, UserSettings } from '../db/types';
+import type { Category, Todo, Reminder, TimeEntry, UserSettings, MoodEntry } from '../db/types';
 
 export interface PushRequest {
   categories?: Category[];
@@ -6,6 +6,7 @@ export interface PushRequest {
   reminders?: Reminder[];
   timeEntries?: TimeEntry[];
   settings?: UserSettings[];
+  moodEntries?: MoodEntry[];
 }
 
 export interface ItemResult {
@@ -23,5 +24,6 @@ export interface PullResponse {
   reminders: Reminder[];
   timeEntries: TimeEntry[];
   settings: UserSettings[];
+  moodEntries: MoodEntry[];
   cursor: string;
 }

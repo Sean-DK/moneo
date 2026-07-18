@@ -8,7 +8,7 @@ const MAX_ATTEMPTS = 8;      // then the entry is a poison pill and gets dropped
 const BATCH_LIMIT = 500;     // server-enforced; we chunk to stay under it
 
 // FK dependency order: referenced tables before referencing tables
-const TABLE_ORDER: SyncTable[] = ['categories', 'settings', 'todos', 'timeEntries', 'reminders'];
+const TABLE_ORDER: SyncTable[] = ['categories', 'settings', 'todos', 'timeEntries', 'reminders', 'moodEntries'];
 
 export type SyncResult =
   | { ok: true; pushed: number; pulled: number }

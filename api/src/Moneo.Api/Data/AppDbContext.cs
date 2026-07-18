@@ -7,6 +7,8 @@ namespace Moneo.Api.Data
     {
         public DbSet<Category> Categories => Set<Category>();
 
+        public DbSet<MoodEntry> MoodEntries => Set<MoodEntry>();
+
         public DbSet<Reminder> Reminders => Set<Reminder>();
 
         public DbSet<Todo> Todos => Set<Todo>();
@@ -109,7 +111,7 @@ namespace Moneo.Api.Data
                 e.HasIndex(s => s.UserId).IsUnique();
             });
 
-            // -- User ---
+            // --- User ---
             modelBuilder.Entity<User>(e =>
             {
                 e.Property(u => u.Email).HasMaxLength(256);
@@ -119,6 +121,16 @@ namespace Moneo.Api.Data
                 e.Property(u => u.GoogleSubject).HasMaxLength(64);
 
                 e.HasIndex(u => u.GoogleSubject).IsUnique();
+            });
+
+            // --- MoodEntry ---
+            modelBuilder.Entity<MoodEntry>(e =>
+            {
+                // One entry per user per day. Filtered unique index so soft-deleted rows
+                // don't block re-creating an entry for the same date.
+                e.HasIndex(m => new { m.UserId, m.MoodDate })
+                 .IsUnique()
+                 .HasFilter("[IsDeleted] = 0");
             });
         }
     }

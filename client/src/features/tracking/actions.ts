@@ -1,7 +1,9 @@
 import { db } from '../../lib/db/db';
-import { create, update } from '../../lib/db/repo';
+import { create, remove, update } from '../../lib/db/repo';
 import { requestSync } from '../../lib/sync/scheduler';
 import { TimeEntrySource, TimerStopSource, type TimeEntry } from '../../lib/db/types';
+import { resolveBackdateCascade, type CascadePlan } from './backdateCascade';
+import { reconcileNags } from './nagScheduler';
 
 export const MAX_NAME_LENGTH = 50;
 
@@ -92,4 +94,57 @@ export async function editEntry(id: string, changes: {
   }
   await update('timeEntries', id, patch);
   requestSync();
+}
+
+/**
+ * Compute the cascade for a proposed backdated start WITHOUT applying it —
+ * so the UI can show a confirm dialog when destructive.
+ */
+export async function planBackdatedStart(startedAt: Date): Promise<CascadePlan> {
+  const entries = await db.timeEntries.filter((e) => !e.isDeleted).toArray();
+  return resolveBackdateCascade(entries, startedAt, new Date());
+}
+
+/**
+ * Start a timer with a (possibly backdated) start time, applying the cascade.
+ * Caller must have already confirmed if plan.destructive.
+ */
+export async function startTimerAt(
+  input: { name: string; categoryId: string },
+  startedAt: Date,
+  plan: CascadePlan,
+): Promise<TimeEntry> {
+  const name = input.name.trim();
+  if (!name) throw new Error('Activity name is required');
+  if (name.length > MAX_NAME_LENGTH) throw new Error(`Max ${MAX_NAME_LENGTH} characters`);
+
+  // Apply cascade to prior entries first (system action — no editCount bump).
+  if (plan.toShorten) {
+    await update('timeEntries', plan.toShorten.entry.id, { endedAt: plan.toShorten.newEndedAt });
+  }
+  for (const e of plan.toDelete) {
+    await remove('timeEntries', e.id);
+  }
+
+  // Any still-running timer that WASN'T swallowed stops at the new start.
+  const running = await getRunningEntry();
+  if (running && !plan.toDelete.some((d) => d.id === running.id) && plan.toShorten?.entry.id !== running.id) {
+    await update('timeEntries', running.id, {
+      endedAt: startedAt.toISOString(),
+      stoppedBy: TimerStopSource.AutoNextTimer,
+    });
+  }
+
+  const entry = await create('timeEntries', {
+    name,
+    categoryId: input.categoryId,
+    startedAt: startedAt.toISOString(),
+    endedAt: null,
+    source: TimeEntrySource.Timer,
+    editCount: 0,
+    stoppedBy: null,
+  });
+  requestSync();
+  void reconcileNags();
+  return entry;
 }

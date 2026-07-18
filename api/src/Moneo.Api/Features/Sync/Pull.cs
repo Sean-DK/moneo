@@ -14,6 +14,7 @@ namespace Moneo.Api.Features.Sync
             ReminderDto[] Reminders,
             TimeEntryDto[] TimeEntries,
             UserSettingsDto[] Settings,
+            MoodEntryDto[] MoodEntries,
             string Cursor);
 
         public static void Map(IEndpointRouteBuilder app) =>
@@ -36,11 +37,13 @@ namespace Moneo.Api.Features.Sync
 
             var settings = await Changed<UserSettings>(db, user, cursor).ToArrayAsync(ct);
 
+            var moodEntries = await Changed<MoodEntry>(db, user, cursor).ToArrayAsync(ct);
+
             var newCursor = new[]
             {
                 cursor, MaxRowVersion(categories),
                 MaxRowVersion(todos), MaxRowVersion(reminders),
-                MaxRowVersion(timeEntries), MaxRowVersion(settings)
+                MaxRowVersion(timeEntries), MaxRowVersion(settings), MaxRowVersion(moodEntries)
             }.Max();
 
             return TypedResults.Ok(new Response(
@@ -49,6 +52,7 @@ namespace Moneo.Api.Features.Sync
                 [.. reminders.Select(ToDto)],
                 [.. timeEntries.Select(ToDto)],
                 [.. settings.Select(ToDto)],
+                [.. moodEntries.Select(ToDto)],
                 newCursor.ToString()));
         }
 
@@ -78,5 +82,12 @@ namespace Moneo.Api.Features.Sync
 
         private static UserSettingsDto ToDto(UserSettings e) =>
             new(e.Id, e.FirstThingTime, e.MorningTime, e.MiddayTime, e.AfternoonTime, e.EveningTime, e.BeforeBedTime, e.TrackerStrictness, e.CreatedAt, e.ModifiedAt, e.IsDeleted);
+
+        private static MoodEntryDto ToDto(MoodEntry e) =>
+            new(e.Id, e.MoodDate,
+                e.DayRating, e.Productivity, e.Weather, e.Activities, e.ActivitiesChaotic,
+                e.Location, e.FreeTime, e.Social, e.Sleep, e.AteWell, e.Exercise, e.Sickness,
+                e.StressEvent, e.GoodEvent, e.Outlook, e.Laughed, e.RepeatDay, e.RepeatDayAutoSkipped,
+                e.CreatedAt, e.ModifiedAt, e.IsDeleted);
     }
 }

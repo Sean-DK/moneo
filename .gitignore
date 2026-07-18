@@ -143,3 +143,5 @@ vite.config.ts.timestamp-*
 .vite/
 bin
 obj
+/api/.vs
+/client/# Moneo Design System__## Visual Direction Exploration__I'm proposing three distinct directions. Each respects the core brief—fast, calm,.zip

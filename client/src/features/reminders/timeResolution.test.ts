@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import type { UserSettings } from '../../lib/db/types';
 import {
   resolveDay, resolveSlotOnDay, resolveRelative,
-  availableSlots, availableDayChips, smartSuggestions,
+  availableSlots, smartSuggestions,
+  dayChipAvailability,
 } from './timeResolution';
 
 const settings: UserSettings = {
@@ -55,10 +56,22 @@ describe('availableSlots', () => {
   });
 });
 
-describe('availableDayChips', () => {
-  it('drops today when every slot has passed', () => {
+describe('dayChipAvailability', () => {
+  it('marks today unavailable when every slot has passed', () => {
     const lateNight = new Date(2026, 6, 15, 23, 30);
-    expect(availableDayChips(settings, lateNight)).not.toContain('today');
+    expect(dayChipAvailability(settings, lateNight).today).toBe(false);
+  });
+
+  it('marks today available during the day', () => {
+    const afternoon = new Date(2026, 6, 15, 14, 0);
+    expect(dayChipAvailability(settings, afternoon).today).toBe(true);
+  });
+
+  it('always marks later and custom available', () => {
+    const lateNight = new Date(2026, 6, 15, 23, 30);
+    const avail = dayChipAvailability(settings, lateNight);
+    expect(avail.later).toBe(true);
+    expect(avail.custom).toBe(true);
   });
 });
 
@@ -91,6 +104,6 @@ describe('smartSuggestions', () => {
 
   it('falls over to tomorrow firstThing late at night', () => {
     const lateNight = new Date(2026, 6, 15, 23, 30);
-    expect(smartSuggestions(settings, lateNight)[1].presetUsed).toBe('smart.tomorrow.firstThing');
+    expect(smartSuggestions(settings, lateNight)[1].presetUsed).toBe('smart.tomorrow.morning');
   });
 });

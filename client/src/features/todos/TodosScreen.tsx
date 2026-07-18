@@ -120,7 +120,7 @@ function NewTodoRow() {
           placeholder="Add a task…"
           onChange={(e) => setNote(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && void submit()}
-          className="min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-muted"
+          className="min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none"
         />
         <button
           onClick={() => void submit()}

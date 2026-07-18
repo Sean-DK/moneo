@@ -1,6 +1,6 @@
 import { v7 as uuidv7 } from 'uuid';
 import { db } from './db';
-import type { Category, Todo, Reminder, TimeEntry, UserSettings, Syncable } from './types';
+import type { Category, Todo, Reminder, TimeEntry, UserSettings, Syncable, MoodEntry } from './types';
 import type { SyncTable } from '../sync/outbox';
 import type Dexie from 'dexie';
 
@@ -10,6 +10,7 @@ interface RowTypes {
   reminders: Reminder;
   timeEntries: TimeEntry;
   settings: UserSettings;
+  moodEntries: MoodEntry;
 }
 
 type RowFor<T extends SyncTable> = RowTypes[T];

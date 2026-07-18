@@ -6,6 +6,8 @@ import { TrackingScreen } from '../features/tracking/TrackingScreen';
 import { SettingsScreen } from '../features/settings/SettingsScreen';
 import { TodoEditScreen } from '../features/todos/TodoEditScreen';
 import { useAndroidBack } from './useAndroidBack';
+import { CheckInFlow } from '../features/mood/CheckInFlow';
+import { MoodScreen } from '../features/mood/MoodScreen';
 
 const SIDE_TABS: { id: Tab; label: string; icon: typeof CheckSquare }[] = [
   { id: 'todos', label: 'To Do', icon: CheckSquare },
@@ -16,10 +18,10 @@ const SIDE_TABS: { id: Tab; label: string; icon: typeof CheckSquare }[] = [
 
 export function AppShell() {
   useAndroidBack();
-  const { tab, editingTodoId } = useNav();
+  const { tab, editingTodoId, checkInDate } = useNav();
 
   return (
-    <div className="flex h-[100svh] flex-col bg-canvas">
+    <div className="flex h-svh flex-col bg-canvas">
       <main
         className="flex-1 overflow-y-auto px-4 pt-2"
         style={{ paddingBottom: 'calc(72px + env(safe-area-inset-bottom))' }}
@@ -27,16 +29,14 @@ export function AppShell() {
         {tab === 'reminders' && <RemindersScreen />}
         {tab === 'todos' && (editingTodoId ? <TodoEditScreen todoId={editingTodoId} /> : <TodosScreen />)}
         {tab === 'time' && <TrackingScreen />}
-        {tab === 'mood' && <MoodPlaceholder />}
+        {tab === 'mood' && (checkInDate
+          ? <CheckInFlow moodDate={checkInDate} />
+          : <MoodScreen />)}
         {tab === 'settings' && <SettingsScreen />}
       </main>
       <BottomNav />
     </div>
   );
-}
-
-function MoodPlaceholder() {
-  return <div className="p-8 text-center text-muted">Mood tracking — coming soon.</div>;
 }
 
 function BottomNav() {

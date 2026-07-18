@@ -5,7 +5,6 @@ using Moneo.Api.Common;
 using Moneo.Api.Data.Entities;
 using Moneo.Api.Features.Sync;
 using Moneo.Api.Tests.Infrastructure;
-using System.Diagnostics;
 
 namespace Moneo.Api.Tests;
 
@@ -17,8 +16,9 @@ public class SyncTests
 
     private static readonly CancellationToken Ct = CancellationToken.None;
 
-    private static Push.Request Batch(CategoryDto[]? categories = null, TodoDto[]? todos = null, ReminderDto[]? reminders = null, TimeEntryDto[]? timeEntries = null, UserSettingsDto[]? settings = null) =>
-        new(categories, todos, reminders, timeEntries, settings);
+    private static Push.Request Batch(CategoryDto[]? categories = null, TodoDto[]? todos = null, ReminderDto[]? reminders = null,
+        TimeEntryDto[]? timeEntries = null, UserSettingsDto[]? settings = null, MoodEntryDto[]? moodEntries = null) =>
+        new(categories, todos, reminders, timeEntries, settings, moodEntries);
 
     private static TResponse AssertOk<TResponse>(INestedHttpResult result) =>
         Assert.IsType<Ok<TResponse>>(result.Result).Value!;

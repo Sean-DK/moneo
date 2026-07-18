@@ -43,4 +43,15 @@ namespace Moneo.Api.Features.Sync
         int AfternoonTime, int EveningTime, int BeforeBedTime,
         TrackerStrictness TrackerStrictness,
         DateTimeOffset CreatedAt, DateTimeOffset ModifiedAt, bool IsDeleted) : ISyncDto;
+
+    public record MoodEntryDto(
+        Guid Id,
+        DateOnly MoodDate,
+        DayRating? DayRating, Productivity? Productivity,
+        Weather? Weather, Activities? Activities, bool? ActivitiesChaotic,
+        Location? Location, FreeTime? FreeTime, Social? Social,
+        Sleep? Sleep, AteWell? AteWell, Exercise? Exercise, Sickness? Sickness,
+        StressEvent? StressEvent, GoodEvent? GoodEvent, Outlook? Outlook,
+        bool? Laughed, bool? RepeatDay, bool RepeatDayAutoSkipped,
+        DateTimeOffset CreatedAt, DateTimeOffset ModifiedAt, bool IsDeleted) : ISyncDto;
 }
