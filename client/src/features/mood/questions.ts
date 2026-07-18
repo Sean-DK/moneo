@@ -3,6 +3,15 @@ import {
   AteWell, Exercise, Sickness, StressEvent, GoodEvent, Outlook, Activities,
   type MoodEntry,
 } from '../../lib/db/types';
+import {
+  Sun, Cloud, CloudRain, CloudSnow, CircleHelp,
+  Home, Trees, Shuffle,
+  Dumbbell, Footprints, Sofa,
+  HeartPulse, Frown, Thermometer,
+  Laugh, Meh,
+  Briefcase, ListChecks, Palette, Users, Sparkles,
+  type LucideIcon,
+} from 'lucide-react';
 
 // Which MoodEntry field a question writes to.
 export type MoodField = keyof Omit<MoodEntry,
@@ -11,6 +20,8 @@ export type MoodField = keyof Omit<MoodEntry,
 export interface Option {
   label: string;
   value: number;      // the encoded enum value (or flag bit for multi)
+  icon?: LucideIcon;   // present → this question renders as a "category" (icon-led) list
+  neutral?: boolean;   // "Don't know" etc. — excluded from the scale ramp, gets a dim dot
 }
 
 export interface Question {
@@ -46,29 +57,29 @@ export const QUESTIONS: Question[] = [
   // --- Activity ---
   { field: 'weather', group: 'Activity', kind: 'single', prompt: 'What was the weather like today?',
     options: [
-      { label: 'Sunny', value: Weather.Sunny },
-      { label: 'Cloudy', value: Weather.Cloudy },
-      { label: 'Rainy', value: Weather.Rainy },
-      { label: 'Snowy', value: Weather.Snowy },
-      { label: "Don't know", value: Weather.DontKnow },
+      { label: 'Sunny', value: Weather.Sunny, icon: Sun },
+      { label: 'Cloudy', value: Weather.Cloudy, icon: Cloud },
+      { label: 'Rainy', value: Weather.Rainy, icon: CloudRain },
+      { label: 'Snowy', value: Weather.Snowy, icon: CloudSnow },
+      { label: "Don't know", value: Weather.DontKnow, icon: CircleHelp, neutral: true },
     ] },
   { field: 'activities', group: 'Activity', kind: 'multi',
     prompt: 'What did you spend most of the day doing?',
     info: 'Pick all that apply. Choose "Everything, and more" for days too hectic or scattered to break down — it supercedes the others.',
     autoInfoKey: 'mood.activities',
     options: [
-      { label: 'Working', value: Activities.Working },
-      { label: 'Chores & Errands', value: Activities.ChoresErrands },
-      { label: 'Hobbies', value: Activities.Hobbies },
-      { label: 'Relaxing', value: Activities.Relaxing },
-      { label: 'Socializing', value: Activities.Socializing },
-      // "Everything, and more" (chaotic) handled specially in the component.
+      { label: 'Working', value: Activities.Working, icon: Briefcase },
+      { label: 'Chores & Errands', value: Activities.ChoresErrands, icon: ListChecks },
+      { label: 'Hobbies', value: Activities.Hobbies, icon: Palette },
+      { label: 'Relaxing', value: Activities.Relaxing, icon: Sofa },
+      { label: 'Socializing', value: Activities.Socializing, icon: Users },
+      // "Everything, and more" (chaotic) handled specially in the component; icon: Sparkles.
     ] },
   { field: 'location', group: 'Activity', kind: 'single', prompt: 'Where did you spend most of your day?',
     options: [
-      { label: 'Inside', value: Location.Inside },
-      { label: 'Outside', value: Location.Outside },
-      { label: 'A bit of both', value: Location.Both },
+      { label: 'Inside', value: Location.Inside, icon: Home },
+      { label: 'Outside', value: Location.Outside, icon: Trees },
+      { label: 'A bit of both', value: Location.Both, icon: Shuffle },
     ] },
   { field: 'freeTime', group: 'Activity', kind: 'single', prompt: 'How much free time did you have today?',
     options: [
@@ -76,7 +87,7 @@ export const QUESTIONS: Question[] = [
       { label: 'Enough', value: FreeTime.Enough },
       { label: 'Not enough', value: FreeTime.NotEnough },
       { label: 'None', value: FreeTime.None },
-      { label: "Don't know", value: FreeTime.DontKnow },
+      { label: "Don't know", value: FreeTime.DontKnow, neutral: true },
     ] },
   { field: 'social', group: 'Activity', kind: 'single', prompt: 'How social were you today?',
     options: [
@@ -92,7 +103,7 @@ export const QUESTIONS: Question[] = [
       { label: 'Great', value: Sleep.Great },
       { label: 'Okay', value: Sleep.Okay },
       { label: 'Poorly', value: Sleep.Poorly },
-      { label: "Don't know", value: Sleep.DontKnow },
+      { label: "Don't know", value: Sleep.DontKnow, neutral: true },
     ] },
   { field: 'ateWell', group: 'Physical', kind: 'single', prompt: 'Did you eat well today?',
     options: [
@@ -100,19 +111,19 @@ export const QUESTIONS: Question[] = [
       { label: 'I think so', value: AteWell.IThinkSo },
       { label: 'Not really', value: AteWell.NotReally },
       { label: 'No', value: AteWell.No },
-      { label: "Don't know", value: AteWell.DontKnow },
+      { label: "Don't know", value: AteWell.DontKnow, neutral: true },
     ] },
   { field: 'exercise', group: 'Physical', kind: 'single', prompt: 'Did you exercise today?',
     options: [
-      { label: 'Yes', value: Exercise.Yes },
-      { label: 'Yes, I tried to', value: Exercise.Tried },
-      { label: 'No', value: Exercise.No },
+      { label: 'Yes', value: Exercise.Yes, icon: Dumbbell },
+      { label: 'Yes, I tried to', value: Exercise.Tried, icon: Footprints },
+      { label: 'No', value: Exercise.No, icon: Sofa },
     ] },
   { field: 'sickness', group: 'Physical', kind: 'single', prompt: 'Were you sick today?',
     options: [
-      { label: 'No', value: Sickness.No },
-      { label: 'A little off', value: Sickness.ALittleOff },
-      { label: 'Yes', value: Sickness.Yes },
+      { label: 'No', value: Sickness.No, icon: HeartPulse },
+      { label: 'A little off', value: Sickness.ALittleOff, icon: Frown },
+      { label: 'Yes', value: Sickness.Yes, icon: Thermometer },
     ] },
 
   // --- Emotional ---
@@ -142,7 +153,11 @@ export const QUESTIONS: Question[] = [
     ] },
   { field: 'laughed', group: 'Emotional', kind: 'single', prompt: 'Did you laugh today?',
     options: [
-      { label: 'Yes', value: 1 },
-      { label: 'Not today', value: 0 },
+      { label: 'Yes', value: 1, icon: Laugh },
+      { label: 'Not today', value: 0, icon: Meh },
     ] },
 ];
+
+// The "Everything, and more" override icon for the activities question (kept
+// out of QUESTIONS since that option is synthesized in the component).
+export { Sparkles as chaoticActivityIcon };

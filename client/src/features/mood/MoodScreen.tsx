@@ -5,6 +5,8 @@ import { recentMoodDays, isCheckInStarted, type MoodDay } from './actions';
 import { currentMoodDate, fromDateString } from './moodDate';
 import { DayRating, Productivity, type MoodEntry } from '../../lib/db/types';
 import { useNav } from '../../app/navStore';
+import { QUESTIONS } from './questions';
+import { GHOST_TEXT, optionRampColor } from './checkInTheme';
 
 // Short labels for the Q1/Q2 summary (subset of the full option labels).
 const DAY_LABEL: Record<number, string> = {
@@ -15,6 +17,13 @@ const PROD_LABEL: Record<number, string> = {
   [Productivity.NotAtAll]: 'Not at all', [Productivity.NotVery]: 'Not very',
   [Productivity.Somewhat]: 'Somewhat', [Productivity.Fairly]: 'Fairly', [Productivity.CrushedIt]: 'Crushed it',
 };
+/** Color for a given answer value, reusing the check-in's scale ramp. */
+function ratingColor(field: 'dayRating' | 'productivity', value: number): string {
+  const q = QUESTIONS.find((x) => x.field === field);
+  if (!q) return 'inherit';
+  const idx = q.options.findIndex((o) => o.value === value);
+  return idx === -1 ? 'inherit' : optionRampColor(q.options, idx);
+}
 
 const dayFmt = new Intl.DateTimeFormat(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
@@ -52,7 +61,7 @@ export function MoodScreen() {
       ) : (
         <button
           onClick={() => startCheckIn(todayMoodDate)}
-          className="mb-6 w-full rounded-15 bg-accent py-4 text-[17px] font-bold text-ink-on-accent"
+          className="mb-6 w-full rounded-15 border bg-border/40 bg-accent/10 py-4 text-[17px] font-bold text-accent"
         >
           Start today's check-in
         </button>
@@ -71,9 +80,23 @@ export function MoodScreen() {
 
 function MoodSummary({ entry }: { entry: MoodEntry }) {
   return (
-    <div className="mt-1 flex gap-4 text-[15px] text-ink">
-      {entry.dayRating !== null && <span>Day: {DAY_LABEL[entry.dayRating]}</span>}
-      {entry.productivity !== null && <span>Productivity: {PROD_LABEL[entry.productivity]}</span>}
+    <div
+      className="mt-1 flex gap-4 text-[15px]"
+      style={{ justifyContent: "space-between" }}>
+      {entry.dayRating !== null && (
+        <span style={{ color: GHOST_TEXT }}>
+          Day: <strong style={{ color: ratingColor('dayRating', entry.dayRating) }}>
+            {DAY_LABEL[entry.dayRating]}
+          </strong>
+        </span>
+      )}
+      {entry.productivity !== null && (
+        <span style={{ color: GHOST_TEXT }}>
+          Productivity: <strong style={{ color: ratingColor('productivity', entry.productivity) }}>
+            {PROD_LABEL[entry.productivity]}
+          </strong>
+        </span>
+      )}
     </div>
   );
 }
@@ -98,7 +121,7 @@ function HistoryRow({ day, onCheckIn }: { day: MoodDay; onCheckIn: () => void })
       <button onClick={onCheckIn}
         className="flex w-full items-center justify-between rounded-14 border border-dashed border-white/15 p-3 text-left">
         <span className="text-[13px] text-muted">{label}</span>
-        <span className="text-[13px] font-semibold text-accent">Missed · check in →</span>
+        <span className="text-[13px] font-semibold text-danger">Missed · check in →</span>
       </button>
     </li>
   );
