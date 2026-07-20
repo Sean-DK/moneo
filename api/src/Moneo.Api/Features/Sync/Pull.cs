@@ -18,10 +18,15 @@ namespace Moneo.Api.Features.Sync
             string Cursor);
 
         public static void Map(IEndpointRouteBuilder app) =>
-            app.MapGet("/sync/pull", Handle);
+            app.MapGet("/sync/pull", Handle)
+                .RequireAuthorization();
 
-        internal static async Task<Results<Ok<Response>, BadRequest<string>>> Handle(string? since, AppDbContext db, CurrentUser user, CancellationToken ct)
+        internal static async Task<Results<Ok<Response>, BadRequest<string>>> Handle(string? since, AppDbContext db, CurrentUser user, HttpContext http, CancellationToken ct)
         {
+            http.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+
+            http.Response.Headers.Pragma = "no-cache";
+
             ulong cursor = 0;
 
             if (since != null && !ulong.TryParse(since, out cursor))

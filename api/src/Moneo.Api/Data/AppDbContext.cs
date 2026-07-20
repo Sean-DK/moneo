@@ -19,6 +19,8 @@ namespace Moneo.Api.Data
 
         public DbSet<User> Users => Set<User>();
 
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // --- SyncableEntity ---
@@ -131,6 +133,16 @@ namespace Moneo.Api.Data
                 e.HasIndex(m => new { m.UserId, m.MoodDate })
                  .IsUnique()
                  .HasFilter("[IsDeleted] = 0");
+            });
+
+            // --- RefreshToken ---
+            modelBuilder.Entity<RefreshToken>(e =>
+            {
+                e.Property(t => t.TokenHash).HasMaxLength(64);
+
+                e.HasIndex(t => t.TokenHash).IsUnique();
+
+                e.HasIndex(t => t.UserId);
             });
         }
     }

@@ -46,7 +46,8 @@ namespace Moneo.Api.Features.Sync
 
         public static void Map(IEndpointRouteBuilder app) =>
             app.MapPost("/sync/push", Handle)
-                .WithRequestValidation<Request>();
+                .WithRequestValidation<Request>()
+                .RequireAuthorization();
 
         internal static async Task<Results<Ok<Response>, ProblemHttpResult>> Handle(Request request, AppDbContext db, CurrentUser user, CancellationToken ct)
         {
