@@ -68,7 +68,7 @@ export interface Reminder extends Syncable {
 
 export interface TimeEntry extends Syncable {
   name: string;
-  categoryId: string | null;
+  categoryId: string;
   startedAt: string;
   endedAt: string | null;   // null = timer running
   source: TimeEntrySource;

@@ -148,3 +148,9 @@ export async function startTimerAt(
   void reconcileNags();
   return entry;
 }
+
+export async function deleteEntry(id: string): Promise<void> {
+  await remove('timeEntries', id);
+  requestSync();
+  void reconcileNags();   // in case it was the running entry
+}

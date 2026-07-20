@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Bell, ChevronRight, Plus, Trash2 } from 'lucide-react';
+import { Bell, Check, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { useOpenTodos, useCompletedTodos, type OpenTodo } from './queries';
 import { createTodo, completeTodo, uncompleteTodo, MAX_NOTE_LENGTH, deleteTodo, type DeletedTodo, undoDeleteTodo } from './actions';
 import { useCategories } from '../categories/queries';
@@ -144,12 +144,20 @@ function NewTodoRow() {
 }
 
 function TodoRow({ todo, categories, onDeleted }: { todo: OpenTodo; categories: Category[], onDeleted: (d: DeletedTodo) => void }) {
+  const [completing, setCompleting] = useState(false);
   const category = categories.find((c) => c.id === todo.categoryId);
   const x = useMotionValue(0);
   // Red delete backdrop fades in as you drag left
   const bgOpacity = useTransform(x, [-80, 0], [1, 0]);
 
+  const complete = () => {
+    if (completing) return;
+    setCompleting(true);                                  // instant visual feedback
+    setTimeout(() => void completeTodo(todo.id), 420);    // let the beat play, then write
+  };
+
   const handleDragEnd = (_: unknown, info: { offset: { x: number }; velocity: { x: number } }) => {
+    if (completing) return;
     const swipedFar = info.offset.x < -100;
     const flicked = info.velocity.x < -500;
     if (swipedFar || flicked) {
@@ -164,7 +172,15 @@ function TodoRow({ todo, categories, onDeleted }: { todo: OpenTodo; categories: 
   };
 
   return (
-    <li className="relative overflow-hidden border-b border-white/6">
+    <motion.li
+      className="relative overflow-hidden border-b border-white/6"
+      animate={completing
+        ? { opacity: 0, height: 0 }
+        : { opacity: 1, height: 'auto' }}
+      transition={completing
+        ? { duration: 0.28, delay: 0.14, ease: 'easeInOut' }
+        : { duration: 0 }}
+    >
       {/* Delete backdrop revealed on left-swipe */}
       <motion.div
         style={{ opacity: bgOpacity }}
@@ -174,7 +190,7 @@ function TodoRow({ todo, categories, onDeleted }: { todo: OpenTodo; categories: 
       </motion.div>
 
       <motion.div
-        drag="x"
+        drag={completing ? false : 'x'}
         style={{ x }}
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={{ left: 0.7, right: 0 }}   // only rubber-band leftward
@@ -182,15 +198,38 @@ function TodoRow({ todo, categories, onDeleted }: { todo: OpenTodo; categories: 
         className="relative flex items-center gap-3.25 py-3.25 px-2.25 bg-canvas"
       >
         <button
-          onClick={() => void completeTodo(todo.id)}
-          className="h-5.75 w-5.75 shrink-0 rounded-7 border-2 border-control"
+          onClick={complete}
+          className="flex h-5.75 w-5.75 shrink-0 items-center justify-center rounded-7 border-2 transition-colors duration-150"
+          style={{
+            borderColor: completing ? 'var(--color-accent)' : undefined,
+            background: completing ? 'var(--color-accent)' : 'transparent',
+          }}
           aria-label="Complete task"
-        />
+        >
+          {completing && (
+            <motion.span
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.14 }}
+              className="flex items-center justify-center"
+            >
+              <Check size={13} strokeWidth={3} style={{ color: 'var(--color-ink-on-accent)' }} />
+            </motion.span>
+          )}
+        </button>
         <div
           className="min-w-0 flex-1 cursor-pointer"
           onClick={() => useNav.getState().editTodo(todo.id)}
         >
-          <div className="truncate text-[15px] font-medium text-ink">{todo.note}</div>
+          <div
+            className="truncate text-[15px] font-medium text-ink transition-all duration-200"
+            style={{
+              textDecoration: completing ? 'line-through' : 'none',
+              opacity: completing ? 0.5 : 1,
+            }}
+          >
+            {todo.note}
+          </div>
           {(todo.priority !== Priority.None || todo.remindAt) && (
             <div className="mt-1 flex items-center gap-2">
               {todo.priority !== Priority.None && (
@@ -216,7 +255,7 @@ function TodoRow({ todo, categories, onDeleted }: { todo: OpenTodo; categories: 
           style={{ background: category?.color ?? DEFAULT_CATEGORY_COLOR }}
         />
       </motion.div>
-    </li>
+    </motion.li>
   );
 }
 

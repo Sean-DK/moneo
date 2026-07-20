@@ -12,6 +12,9 @@ interface NavState {
   checkInDate: string | null;   // moodDate being checked in, or null
   startCheckIn: (moodDate: string) => void;
   closeCheckIn: () => void;
+  editingEntryId: string | null;
+  editEntry: (id: string) => void;
+  closeEntryEdit: () => void;
 }
 export const useNav = create<NavState>((set) => ({
   tab: 'reminders',
@@ -22,4 +25,7 @@ export const useNav = create<NavState>((set) => ({
   checkInDate: null,
   startCheckIn: (moodDate) => set({ checkInDate: moodDate }),
   closeCheckIn: () => set({ checkInDate: null }),
+  editingEntryId: null,
+  editEntry: (id) => set({ editingEntryId: id }),
+  closeEntryEdit: () => set({ editingEntryId: null }),
 }));

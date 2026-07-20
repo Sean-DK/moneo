@@ -17,7 +17,7 @@ namespace Moneo.Api.Data
                 ModifiedAt = now,
             }).ToList();
 
-        private static readonly string[] Names = ["General", "Personal", "Work", "Chores", "Errands", "Health"];
+        private static readonly string[] Names = ["General", "Free Time", "Work", "Chores", "Errands", "Health"];
 
         private static readonly string[] Colors = ["#6B7280", "#8B5CF6", "#3B82F6", "#F59E0B", "#EF4444", "#10B981"];
     }
