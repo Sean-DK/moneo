@@ -6,12 +6,12 @@ import { useCategories } from '../categories/queries';
 import { useComposerDefaults } from '../reminders/composerStore';
 import type { Category, TimeEntry } from '../../lib/db/types';
 import { CategoryChips, useEffectiveCategory } from '../categories/CategoryChips';
-import { DEFAULT_CATEGORY_COLOR, lighten, tint } from '../../lib/design/color';
+import { DEFAULT_CATEGORY_COLOR } from '../../lib/design/color';
 import { formatEntryDuration, type CascadePlan } from './backdateCascade';
 import { useNav } from '../../app/navStore';
-import { ACTIVITY_PRESETS, type ActivityPreset } from './presets';
-import { hexToRgba } from '../mood/checkInTheme';
+import { type ActivityPreset } from './presets';
 import { AnimatePresence, motion } from 'framer-motion';
+import { TrackingPresetPicker } from './TrackingPresetPicker';
 
 const BACKDATE_CHIPS: { label: string; minutesAgo: number }[] = [
   { label: 'Now', minutesAgo: 0 },
@@ -40,6 +40,7 @@ export function TrackingScreen() {
   const recent = useRecentEntries();
   const categories = useCategories();
   const [tab, setTab] = useState<Tab>('presets');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [presetSeed, setPresetSeed] = useState<{ name: string; categoryId: string } | null>(null);
 
   if (running === undefined || !recent || !categories) return <p className="p-4 text-muted">Loading…</p>;
@@ -58,7 +59,7 @@ export function TrackingScreen() {
   return (
     <div className="flex h-full flex-col">
       {/* Fixed top: start flow (incl. seeded presets) or running timer */}
-      <div className="flex-none p-4 pb-2" style={{ minHeight: 280 }}>
+      <div className="flex-none p-4 pb-2">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={presetSeed || !running ? 'start' : 'running'}
@@ -68,7 +69,11 @@ export function TrackingScreen() {
             transition={{ duration: 0.15 }}
           >
             {presetSeed || !running
-              ? <StartCard seed={presetSeed} onFlowDone={() => setPresetSeed(null)} />
+              ? <StartCard
+                  seed={presetSeed}
+                  onFlowDone={() => setPresetSeed(null)}
+                  onSetCategory={setSelectedCategory}
+                  />
               : <RunningCard entry={running} categories={categories} />}
           </motion.div>
         </AnimatePresence>
@@ -84,35 +89,17 @@ export function TrackingScreen() {
 
       {/* Scrolling body */}
       <div className="flex-1 overflow-y-auto p-4">
-        {tab === 'recent' ? (
+        {tab === 'recent' && (
           <ul className="flex flex-col">
             {recent.map((e) => <EntryRow key={e.id} entry={e} categories={categories} onReplay={() => replayEntry(e)}/>)}
             {recent.length === 0 && <p className="text-muted">No entries yet.</p>}
           </ul>
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            {ACTIVITY_PRESETS.map((p) => {
-              const cat = categories.find((c) => c.name === p.categoryName)
-                ?? categories.find((c) => c.isSystem);
-              const color = cat?.color ?? DEFAULT_CATEGORY_COLOR;
-              return (
-                <button
-                  key={p.label}
-                  onClick={() => pickPreset(p)}
-                  className="flex items-center justify-center gap-1.5 rounded-14 border px-2 py-3 text-[14px] font-semibold"
-                  style={{
-                    borderColor: hexToRgba(color, 0.35),
-                    background: tint(color, 0.12),
-                    color: lighten(color, 0.4),
-                  }}
-                >
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: color }} />
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
         )}
+        <div className={tab === 'presets' ? '' : 'hidden'}>
+          <TrackingPresetPicker
+            categoryId={selectedCategory}
+            onPick={pickPreset} />
+        </div>
       </div>
     </div>
   );
@@ -165,9 +152,10 @@ function RunningCard({ entry, categories }: { entry: TimeEntry; categories: Cate
   );
 }
 
-export function StartCard({ seed, onFlowDone }: {
+export function StartCard({ seed, onFlowDone, onSetCategory }: {
   seed: { name: string; categoryId: string } | null;
   onFlowDone?: () => void;
+  onSetCategory: (categoryId: string | null) => void;
 }) {
   const defaults = useComposerDefaults();
   const [name, setName] = useState('');
@@ -184,6 +172,10 @@ export function StartCard({ seed, onFlowDone }: {
     setCategoryId(seed.categoryId);
     setPendingStart(true);
   }, [seed]);
+
+  useEffect(() => {
+    onSetCategory(categoryId);
+  }, [categoryId]);
 
   const pickBackdate = async (minutesAgo: number) => {
     if (!effectiveId) return;
@@ -252,7 +244,6 @@ export function StartCard({ seed, onFlowDone }: {
   return (
     <div className="flex flex-col gap-2">
       <input
-        autoFocus
         value={name}
         maxLength={MAX_NAME_LENGTH}
         placeholder="What are you doing?"
@@ -261,13 +252,14 @@ export function StartCard({ seed, onFlowDone }: {
         className="rounded-14 border border-white/10 bg-surface px-3 py-2.5 text-[18px] text-ink outline-none"
       />
       <CategoryChips selectedId={categoryId} onSelect={setCategoryId} variant="grid" />
+      {/* Button is unnecessary, just let the user hit enter on the keyboard
       <button
         onClick={() => name.trim() && setPendingStart(true)}
         disabled={!name.trim()}
         className="rounded-14 bg-success py-3 font-bold text-ink-on-accent disabled:opacity-40"
       >
         Start timer
-      </button>
+      </button>*/}
       {error && <p className="text-[13px] text-danger">{error}</p>}
     </div>
   );

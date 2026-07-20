@@ -39,7 +39,10 @@ export function SettingsScreen() {
 
   return (
     <div className="flex flex-col gap-5.5">
-      <h1 className="text-[22px] font-semibold tracking-[-0.01em] text-ink">Settings</h1>
+      <div className="flex flex-row justify-between">
+        <h1 className="text-[22px] font-semibold tracking-[-0.01em] text-ink">Settings</h1>
+        <span className="text-[12px] text-muted" style={{ alignContent: 'end' }}>v0.0</span>
+      </div>
 
       <section>
         <SectionLabel>Time of day</SectionLabel>
