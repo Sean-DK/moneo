@@ -6,12 +6,13 @@ import { useCategories } from '../categories/queries';
 import { useComposerDefaults } from '../reminders/composerStore';
 import type { Category, TimeEntry } from '../../lib/db/types';
 import { CategoryChips, useEffectiveCategory } from '../categories/CategoryChips';
-import { DEFAULT_CATEGORY_COLOR } from '../../lib/design/color';
+import { DEFAULT_CATEGORY_COLOR, lighten } from '../../lib/design/color';
 import { formatEntryDuration, type CascadePlan } from './backdateCascade';
 import { useNav } from '../../app/navStore';
 import { type ActivityPreset } from './presets';
 import { AnimatePresence, motion } from 'framer-motion';
 import { TrackingPresetPicker } from './TrackingPresetPicker';
+import { hexToRgba } from '../mood/checkInTheme';
 
 const BACKDATE_CHIPS: { label: string; minutesAgo: number }[] = [
   { label: 'Now', minutesAgo: 0 },
@@ -127,12 +128,26 @@ function RunningCard({ entry, categories }: { entry: TimeEntry; categories: Cate
   const tick = useTick(true);
   const elapsed = tick - new Date(entry.startedAt).getTime();
   const category = categories.find((c) => c.id === entry.categoryId);
+  const color = category?.color ?? DEFAULT_CATEGORY_COLOR;
 
   return (
-    <div className="rounded-20 border border-accent/30 bg-timercard px-5.5 pb-6 pt-6.5 text-center shadow-[0_10px_34px_rgba(63,208,196,0.12)]">
+    <div
+      className="rounded-20 border px-5.5 pb-6 pt-6.5 text-center"
+      style={{
+        borderColor: hexToRgba(color, 0.3),
+        boxShadow: `0 10px 34px ${hexToRgba(color, 0.12)}`,
+        background: hexToRgba(color, 0.04),
+      }}
+    >
       <div className="mb-3.5 inline-flex items-center gap-1.75">
-        <span className="h-1.75 w-1.75 rounded-full bg-accent shadow-[0_0_0_4px_rgba(63,208,196,0.2)]" />
-        <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">
+        <span
+          className="h-1.75 w-1.75 rounded-full"
+          style={{ background: color, boxShadow: `0 0 0 4px ${hexToRgba(color, 0.2)}` }}
+        />
+        <span
+          className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em]"
+          style={{ color: lighten(color, 0.25) }}
+        >
           tracking · {category?.name ?? 'Uncategorized'}
         </span>
       </div>
