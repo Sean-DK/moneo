@@ -9,6 +9,10 @@ import { useAndroidBack } from './useAndroidBack';
 import { CheckInFlow } from '../features/mood/CheckInFlow';
 import { MoodScreen } from '../features/mood/MoodScreen';
 import { TimeEntryEditScreen } from '../features/tracking/TimeEntryEditScreen';
+import { useAuth } from '../lib/auth/authStore';
+import { useEffect } from 'react';
+import { SignInScreen } from '../features/auth/SignInScreen';
+import { SyncPausedBanner } from '../features/auth/SyncPausedBanner';
 
 const SIDE_TABS: { id: Tab; label: string; icon: typeof CheckSquare }[] = [
   { id: 'time', label: 'Time', icon: Timer },
@@ -19,22 +23,32 @@ const SIDE_TABS: { id: Tab; label: string; icon: typeof CheckSquare }[] = [
 
 export function AppShell() {
   useAndroidBack();
-  const { tab, editingTodoId, checkInDate, editingEntryId } = useNav();
+  const { tab, editingTodoId, editingEntryId, checkInDate } = useNav();
+  const authState = useAuth((s) => s.state);
+  const init = useAuth((s) => s.init);
 
+  useEffect(() => { void init(); }, [init]);
+
+  if (authState === 'loading') {
+    return <div className="flex h-full items-center justify-center text-muted">Loading…</div>;
+  }
+
+  if (authState === 'signedOut') {
+    return <SignInScreen />;
+  }
+
+  // signedIn or expired — the app runs either way; expired just shows the banner.
   return (
     <div className="flex h-svh flex-col bg-canvas">
+      {authState === 'expired' && <SyncPausedBanner />}
       <main
         className="flex-1 overflow-y-auto px-4 pt-2"
         style={{ paddingBottom: 'calc(72px + env(safe-area-inset-bottom))' }}
       >
         {tab === 'reminders' && <RemindersScreen />}
         {tab === 'todos' && (editingTodoId ? <TodoEditScreen todoId={editingTodoId} /> : <TodosScreen />)}
-        {tab === 'time' && (editingEntryId
-          ? <TimeEntryEditScreen entryId={editingEntryId} />
-          : <TrackingScreen />)}
-        {tab === 'mood' && (checkInDate
-          ? <CheckInFlow moodDate={checkInDate} />
-          : <MoodScreen />)}
+        {tab === 'time' && (editingEntryId ? <TimeEntryEditScreen entryId={editingEntryId} /> : <TrackingScreen />)}
+        {tab === 'mood' && (checkInDate ? <CheckInFlow moodDate={checkInDate} /> : <MoodScreen />)}
         {tab === 'settings' && <SettingsScreen />}
       </main>
       <BottomNav />

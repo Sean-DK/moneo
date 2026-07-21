@@ -9,6 +9,7 @@ const isNative = () => Capacitor.isNativePlatform();
 
 const NAG_ID_BASE = 2_000_000_000;
 const NAG_HORIZON = 6; // how many future nags we keep queued at once
+const CHANNEL_ID = 'moneo-nags-v1';
 
 interface Cadence {
   runningMin: number | null;   // gap between running-timer nags; null = none
@@ -30,6 +31,21 @@ function cadence(s: TrackerStrictness): Cadence {
     case TrackerStrictness.Draconian:
       return { runningMin: 60, idleMin: 60, idleCap: null, idleFirstMin: 1 }; // ~immediate
   }
+}
+
+/** Create the nag notification channel. Call once at app start. */
+export async function initNagNotifications(): Promise<void> {
+  if (!isNative()) return;
+
+  await LocalNotifications.createChannel({
+    id: CHANNEL_ID,
+    name: 'Nags',
+    description: 'Reminders to start, stop, or update your time tracker',
+    importance: 4,
+    visibility: 1,
+    sound: 'poke',
+    vibration: true,
+  });
 }
 
 async function clearNags(): Promise<void> {
@@ -75,6 +91,7 @@ function buildRunningNags(
       id: NAG_ID_BASE + i,
       title: `Still working on "${running.name}"?`,
       body: runningBody(running.startedAt, fireAt),
+      channelId: CHANNEL_ID,
       schedule: { at: fireAt, allowWhileIdle: true },
       extra: { nag: true },
     });
@@ -102,6 +119,7 @@ async function buildIdleNags(c: Cadence, settings: UserSettings, now: Date) {
       id: NAG_ID_BASE + out.length,
       title: 'Track your time',
       body: 'What are you doing right now?',
+      channelId: CHANNEL_ID,
       schedule: { at: fireAt, allowWhileIdle: true },
       extra: { nag: true },
     });

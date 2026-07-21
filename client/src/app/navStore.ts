@@ -17,7 +17,7 @@ interface NavState {
   closeEntryEdit: () => void;
 }
 export const useNav = create<NavState>((set) => ({
-  tab: 'reminders',
+  tab: 'time',
   editingTodoId: null,
   go: (tab) => set({ tab, editingTodoId: null }),
   editTodo: (id) => set({ editingTodoId: id }),

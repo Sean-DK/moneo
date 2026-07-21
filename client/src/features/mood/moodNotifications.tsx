@@ -4,6 +4,7 @@ import { db } from '../../lib/db/db';
 import { currentMoodDate } from './moodDate';
 import { isCheckInStarted } from './actions';
 
+
 const isNative = () => Capacitor.isNativePlatform();
 
 // Own ID range, separate from reminders (UUID-hash) and nags (2_000_000_000+).
@@ -11,11 +12,22 @@ const MOOD_BEDTIME_ID = 2_100_000_000;
 const MOOD_CATCHUP_ID = 2_100_000_001;
 const MOOD_OFFSET_MIN = 15; // fires 15 min past the slot, to avoid clustering with user reminders
 
+const CHANNEL_ID = 'moneo-checkin-v1';
 export const MOOD_NOTIFICATION_TYPE = 'MOOD_CHECKIN';
 
 /** Register the tap action (opens the app; the listener routes to the Mood tab). */
 export async function initMoodNotifications(): Promise<void> {
   if (!isNative()) return;
+  
+  await LocalNotifications.createChannel({
+    id: CHANNEL_ID,
+    name: 'Daily Check-In',
+    importance: 4,
+    visibility: 1,
+    sound: 'poke',
+    vibration: true,
+  });
+
   await LocalNotifications.registerActionTypes({
     types: [{ id: MOOD_NOTIFICATION_TYPE, actions: [] }],
   });
@@ -52,6 +64,7 @@ export async function reconcileMoodNotifications(): Promise<void> {
         id: MOOD_BEDTIME_ID,
         title: 'How was your day?',
         body: 'Take a minute for your daily check-in.',
+        channelId: CHANNEL_ID,
         schedule: { at: bedtimeAt, allowWhileIdle: true },
         actionTypeId: MOOD_NOTIFICATION_TYPE,
         extra: { moodCheckIn: true },
@@ -70,6 +83,7 @@ export async function reconcileMoodNotifications(): Promise<void> {
       id: MOOD_CATCHUP_ID,
       title: 'You missed yesterday’s check-in',
       body: 'Want to fill it in? It only takes a minute.',
+      channelId: CHANNEL_ID,
       schedule: { at: catchupAt, allowWhileIdle: true },
       actionTypeId: MOOD_NOTIFICATION_TYPE,
       extra: { moodCheckIn: true },

@@ -5,10 +5,10 @@ EXPOSE 8081
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY ["./src/Moneo.Api/Moneo.Api.csproj", "Moneo.Api/"]
-RUN dotnet restore "Moneo.Api/Moneo.Api.csproj"
+COPY ["src/Moneo.Api/Moneo.Api.csproj", "src/Moneo.Api/"]
+RUN dotnet restore "src/Moneo.Api/Moneo.Api.csproj"
 COPY . .
-WORKDIR "/src/Moneo.Api"
+WORKDIR "/src/src/Moneo.Api"
 RUN dotnet build "Moneo.Api.csproj" -c Release -o /app/build
 
 FROM build AS publish

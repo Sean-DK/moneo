@@ -10,6 +10,8 @@ services:
     restart: unless-stopped
     networks:
       - internal
+    ports:
+      - "1433:1433"
 
   api:
     image: moneo-api:latest
@@ -18,10 +20,13 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=Moneo;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;
-      - Auth__Google__ClientId=${GOOGLE_CLIENT_ID}
-      - Auth__Google__ClientSecret=${GOOGLE_CLIENT_SECRET}
-      - Cors__AllowedOrigins=${ALLOWED_ORIGINS}
+      - ConnectionStrings__Default=Server=sqlserver;Database=Moneo;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;
+      - Cors__AllowedOrigins__0=https://localhost
+      - Cors__AllowedOrigins__1=capacitor://localhost
+      - Auth__GoogleClientId=${GOOGLE_CLIENT_ID}
+      - Auth__JwtSigningKey=${JWT_SIGNING_KEY}
+      - Auth__JwtIssuer=moneo
+      - Auth__JwtAudience=moneo-app
     depends_on:
       - sqlserver
     restart: unless-stopped

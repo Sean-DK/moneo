@@ -13,6 +13,7 @@ export function notificationId(entityId: string): number {
   return h & 0x7fffffff; // Capacitor requires positive ids
 }
 
+const CHANNEL_ID = 'moneo-reminders-v2';
 export const REMINDER_ACTION_TYPE = 'MONEO_REMINDER';
 
 const isNative = () => Capacitor.isNativePlatform();
@@ -20,6 +21,15 @@ const isNative = () => Capacitor.isNativePlatform();
 /** Idempotent setup: permission + action buttons + channel. Call at app start. */
 export async function initReminderNotifications(): Promise<boolean> {
   if (!isNative()) return false;
+
+  await LocalNotifications.createChannel({
+    id: CHANNEL_ID,
+    name: 'Reminders',
+    importance: 4,
+    visibility: 1,
+    sound: 'chime',
+    vibration: true,
+  });
 
   const perm = await LocalNotifications.requestPermissions();
   if (perm.display !== 'granted') return false;
@@ -45,6 +55,7 @@ export async function scheduleReminderNotification(reminder: Reminder): Promise<
       id: notificationId(reminder.id),
       title: reminder.note,
       body: 'Tap to open Moneo',
+      channelId: CHANNEL_ID,
       schedule: { at: new Date(reminder.remindAt), allowWhileIdle: true },
       actionTypeId: REMINDER_ACTION_TYPE,
       extra: { reminderId: reminder.id },

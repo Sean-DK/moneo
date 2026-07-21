@@ -58,8 +58,10 @@ export function TrackingScreen() {
 
   return (
     <div className="flex h-full flex-col">
+      <h2 className="mb-4 text-[22px] font-bold text-ink">Time Tracking</h2>
+
       {/* Fixed top: start flow (incl. seeded presets) or running timer */}
-      <div className="flex-none p-4 pb-2">
+      <div className="flex-none pb-4">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={presetSeed || !running ? 'start' : 'running'}
@@ -88,7 +90,7 @@ export function TrackingScreen() {
       </div>
 
       {/* Scrolling body */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto pt-4">
         {tab === 'recent' && (
           <ul className="flex flex-col">
             {recent.map((e) => <EntryRow key={e.id} entry={e} categories={categories} onReplay={() => replayEntry(e)}/>)}

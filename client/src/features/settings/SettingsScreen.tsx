@@ -6,6 +6,8 @@ import { SLOT_LABELS, type Slot } from '../reminders/timeResolution';
 import { SLOT_ICONS } from '../../lib/design/slotIcons';
 import { SectionLabel } from '../../components/SectionLabel';
 import { IconBox } from '../../components/IconBox';
+import { useAuth } from '../../lib/auth/authStore';
+import { useState } from 'react';
 
 const STRICTNESS_OPTIONS: { value: TrackerStrictness; label: string; desc: string }[] = [
   { value: TrackerStrictness.LeaveMeAlone, label: 'Leave Me Alone', desc: 'No reminders to track, ever.' },
@@ -91,6 +93,74 @@ export function SettingsScreen() {
           })}
         </div>
       </section>
+
+      <section>
+        <div className="border-t border-white/8">
+          <SignOutRow />
+        </div>
+      </section>
     </div>
+  );
+}
+
+function SignOutRow() {
+  const { prepareSignOut, signOut, email } = useAuth();
+  const [pending, setPending] = useState<number | null>(null);
+  const [checking, setChecking] = useState(false);
+
+  const start = async () => {
+    setChecking(true);
+    const remaining = await prepareSignOut();
+    setChecking(false);
+    if (remaining === 0) {
+      await signOut();                 // clean — nothing to lose
+    } else {
+      setPending(remaining);           // warn first
+    }
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between py-3">
+        <div>
+          <div className="text-[15px] text-ink">Signed in</div>
+          <div className="text-[13px] text-muted">{email}</div>
+        </div>
+        <button
+          onClick={() => void start()}
+          disabled={checking}
+          className="rounded-14 border border-danger/40 px-4 py-2 text-[14px] font-semibold text-danger disabled:opacity-50"
+        >
+          {checking ? 'Syncing…' : 'Sign out'}
+        </button>
+      </div>
+
+      {pending !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
+          <div className="w-full max-w-sm rounded-2xl bg-base p-5">
+            <p className="text-[16px] font-semibold text-ink">
+              You have {pending} unsynced {pending === 1 ? 'item' : 'items'}
+            </p>
+            <p className="mt-2 text-[14px] text-muted">
+              They couldn&rsquo;t be saved to the server. If you sign out now, they&rsquo;ll be lost forever.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => setPending(null)}
+                className="flex-1 rounded-14 border border-white/15 py-2.5 font-semibold text-ink"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => void signOut()}
+                className="flex-1 rounded-14 border border-danger/40 bg-danger/10 py-2.5 font-bold text-danger"
+              >
+                Sign out anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

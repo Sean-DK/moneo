@@ -21,12 +21,8 @@ namespace Moneo.Api.Features.Sync
             app.MapGet("/sync/pull", Handle)
                 .RequireAuthorization();
 
-        internal static async Task<Results<Ok<Response>, BadRequest<string>>> Handle(string? since, AppDbContext db, CurrentUser user, HttpContext http, CancellationToken ct)
+        internal static async Task<Results<Ok<Response>, BadRequest<string>>> Handle(string? since, AppDbContext db, CurrentUser user, CancellationToken ct)
         {
-            http.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
-
-            http.Response.Headers.Pragma = "no-cache";
-
             ulong cursor = 0;
 
             if (since != null && !ulong.TryParse(since, out cursor))

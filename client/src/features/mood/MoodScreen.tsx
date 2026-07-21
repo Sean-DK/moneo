@@ -45,7 +45,7 @@ export function MoodScreen() {
   const todayMoodDate = currentMoodDate(settings, now);
 
   return (
-    <div className="mx-auto max-w-md p-4">
+    <div className="mx-auto max-w-md">
       <h2 className="mb-4 text-[22px] font-bold text-ink">Mood</h2>
 
       {/* Today's check-in CTA */}

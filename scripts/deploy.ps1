@@ -11,6 +11,7 @@ $STATIC_DIR  = "/var/www/moneo"
 function Assert-Success {
     param([string]$Step)
     if ($LASTEXITCODE -ne 0) {
+		Pop-Location
         throw "❌ Step failed: $Step (exit code $LASTEXITCODE)"
     }
 }
@@ -29,6 +30,7 @@ Write-Host ">> Version: $appVersion" -ForegroundColor Cyan
 # ---- Build React app for Capacitor (no service worker) ----
 Write-Host "Building React app for Capacitor..." -ForegroundColor Yellow
 Push-Location $FRONTEND_DIR
+Set-Content .env.production "VITE_API_URL=https://moneoapi.stablesea.net`nVITE_DEV_AUTH_BYPASS=false"
 $env:BUILD_TARGET    = "capacitor"
 $env:VITE_APP_VERSION = $appVersion
 npm run build
@@ -45,7 +47,7 @@ Pop-Location
 # ---- Build API Docker image ----
 Write-Host "Building API Docker image..." -ForegroundColor Yellow
 Push-Location $BACKEND_DIR
-docker build -f Moneo.Api\Dockerfile -t moneo-api:latest .
+docker build -f src\Moneo.Api\Dockerfile -t moneo-api:latest .
 Assert-Success "Docker build"
 
 # ---- Transfer Docker image to server ----
@@ -81,4 +83,5 @@ try {
     Write-Host "Migration step skipped." -ForegroundColor Yellow
 }
 
+Pop-Location
 Write-Host "✅ Deploy complete! Version: $appVersion" -ForegroundColor Green

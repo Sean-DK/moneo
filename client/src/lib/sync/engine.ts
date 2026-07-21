@@ -2,6 +2,7 @@ import { db } from '../db/db';
 import { api, ApiError } from '../api/http';
 import type { SyncTable, OutboxEntry } from './outbox';
 import type { PushRequest, PushResponse, PullResponse } from './contracts';
+import { useAuth } from '../auth/authStore';
 
 const CURSOR_KEY = 'syncCursor';
 const MAX_ATTEMPTS = 8;      // then the entry is a poison pill and gets dropped
@@ -18,6 +19,9 @@ let inFlight: Promise<SyncResult> | null = null;
 
 /** Run a full sync cycle (push then pull). Concurrent calls share one cycle. */
 export function sync(): Promise<SyncResult> {
+  if (useAuth.getState().state !== 'signedIn') {
+    return Promise.resolve({ ok: false, error: 'not signed in' });
+  }
   inFlight ??= run().finally(() => (inFlight = null));
   return inFlight;
 }
@@ -133,11 +137,11 @@ async function pull(): Promise<number> {
 
   const count =
     response.categories.length + response.todos.length + response.reminders.length +
-    response.timeEntries.length + response.settings.length;
+    response.timeEntries.length + response.settings.length + response.moodEntries.length;
 
   await db.transaction(
     'rw',
-    [db.categories, db.todos, db.reminders, db.timeEntries, db.settings, db.outbox, db.meta],
+    [db.categories, db.todos, db.reminders, db.timeEntries, db.settings, db.moodEntries, db.outbox, db.meta],
     async () => {
       for (const table of TABLE_ORDER) {
         for (const row of response[table]) {

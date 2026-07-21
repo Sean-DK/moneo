@@ -5,7 +5,13 @@ const config: CapacitorConfig = {
   appName: 'Moneo',
   webDir: 'dist',
   server: {
-    androidScheme: 'http',
+    androidScheme: 'https',
+  },
+  plugins: {
+    LocalNotifications: {
+        smallIcon: 'ic_stat_moneo',
+        iconColor: '#2FB5AA',
+    },
   },
 };
 

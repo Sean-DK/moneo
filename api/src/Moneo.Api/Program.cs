@@ -63,7 +63,7 @@ builder.Services.AddHttpContextAccessor();
 if (devBypass)
 {
     builder.Services.AddScoped<ICurrentUserAccessor, DevCurrentUserAccessor>();
-    Console.WriteLine("⚠  AUTH BYPASS ACTIVE — running all requests as the dev user.");
+    Console.WriteLine("AUTH BYPASS ACTIVE — running all requests as the dev user.");
 }
 else
 {
@@ -73,9 +73,26 @@ else
 var app = builder.Build();
 
 app.UseCors();
+
 app.UseAuthentication();
+
 app.UseAuthorization();
 
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+    await next();
+});
+
 app.MapEndpoints();
+
+if (args.Contains("migrate"))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+    Console.WriteLine("Migrations applied.");
+    return;
+}
 
 app.Run();
