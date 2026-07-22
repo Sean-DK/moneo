@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Play, Square } from 'lucide-react';
+import { Play, Square, ChartColumn } from 'lucide-react';
 import { useRunningEntry, useRecentEntries, useTick } from './queries';
 import { stopTimer, MAX_NAME_LENGTH, startTimerAt, planBackdatedStart } from './actions';
 import { useCategories } from '../categories/queries';
@@ -59,7 +59,16 @@ export function TrackingScreen() {
 
   return (
     <div className="flex h-full flex-col">
-      <h2 className="mb-4 text-[22px] font-bold text-ink">Time Tracking</h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-[22px] font-bold text-ink">Time Tracking</h2>
+        <button
+          onClick={() => useNav.getState().openTimeSummary()}
+          aria-label="Time summary"
+          className="p-1 text-muted"
+        >
+          <ChartColumn size={22} />
+        </button>
+      </div>
 
       {/* Fixed top: start flow (incl. seeded presets) or running timer */}
       <div className="flex-none pb-4">

@@ -15,11 +15,14 @@ interface NavState {
   editingEntryId: string | null;
   editEntry: (id: string) => void;
   closeEntryEdit: () => void;
+  showTimeSummary: boolean;
+  openTimeSummary: () => void;
+  closeTimeSummary: () => void;
 }
 export const useNav = create<NavState>((set) => ({
   tab: 'time',
   editingTodoId: null,
-  go: (tab) => set({ tab, editingTodoId: null }),
+  go: (tab) => set({ tab, editingTodoId: null, showTimeSummary: false }),
   editTodo: (id) => set({ editingTodoId: id }),
   closeEdit: () => set({ editingTodoId: null }),
   checkInDate: null,
@@ -28,4 +31,7 @@ export const useNav = create<NavState>((set) => ({
   editingEntryId: null,
   editEntry: (id) => set({ editingEntryId: id }),
   closeEntryEdit: () => set({ editingEntryId: null }),
+  showTimeSummary: false,
+  openTimeSummary: () => set({ showTimeSummary: true }),
+  closeTimeSummary: () => set({ showTimeSummary: false }),
 }));

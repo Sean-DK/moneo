@@ -9,6 +9,7 @@ import { useAndroidBack } from './useAndroidBack';
 import { CheckInFlow } from '../features/mood/CheckInFlow';
 import { MoodScreen } from '../features/mood/MoodScreen';
 import { TimeEntryEditScreen } from '../features/tracking/TimeEntryEditScreen';
+import { TimeSummaryScreen } from '../features/tracking/TimeSummaryScreen';
 import { useAuth } from '../lib/auth/authStore';
 import { useEffect } from 'react';
 import { SignInScreen } from '../features/auth/SignInScreen';
@@ -23,7 +24,7 @@ const SIDE_TABS: { id: Tab; label: string; icon: typeof CheckSquare }[] = [
 
 export function AppShell() {
   useAndroidBack();
-  const { tab, editingTodoId, editingEntryId, checkInDate } = useNav();
+  const { tab, editingTodoId, editingEntryId, checkInDate, showTimeSummary } = useNav();
   const authState = useAuth((s) => s.state);
   const init = useAuth((s) => s.init);
 
@@ -47,7 +48,11 @@ export function AppShell() {
       >
         {tab === 'reminders' && <RemindersScreen />}
         {tab === 'todos' && (editingTodoId ? <TodoEditScreen todoId={editingTodoId} /> : <TodosScreen />)}
-        {tab === 'time' && (editingEntryId ? <TimeEntryEditScreen entryId={editingEntryId} /> : <TrackingScreen />)}
+        {tab === 'time' && (
+          editingEntryId ? <TimeEntryEditScreen entryId={editingEntryId} />
+          : showTimeSummary ? <TimeSummaryScreen />
+          : <TrackingScreen />
+        )}
         {tab === 'mood' && (checkInDate ? <CheckInFlow moodDate={checkInDate} /> : <MoodScreen />)}
         {tab === 'settings' && <SettingsScreen />}
       </main>

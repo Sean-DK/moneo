@@ -25,6 +25,11 @@ export function useAndroidBack(): void {
         return;
       }
 
+      if (nav.showTimeSummary) {
+        nav.closeTimeSummary();
+        return;
+      }
+
       // 2. On any non-primary tab → go back to Reminders (the home tab).
       if (nav.tab !== 'reminders') {
         nav.go('reminders');
